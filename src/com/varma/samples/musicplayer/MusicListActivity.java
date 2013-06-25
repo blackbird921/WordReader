@@ -43,9 +43,7 @@ public class MusicListActivity extends ListActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		String[] values = new String[] { "中国", "iPhone", "WindowsMobile", "Blackberry", "WebOS", "Ubuntu", "Windows7",
-				"Max OS X", "Linux", "OS/2", "Ubuntu", "Windows7", "Max OS X", "Linux", "OS/2", "Ubuntu", "Windows7",
-				"Max OS X", "Linux", "OS/2", "Android", "iPhone", "WindowsMobile" };
+		String[] values = new String[] { "中国", "今天" };
 
 		final ArrayList<String> list = new ArrayList<String>();
 		for (int i = 0; i < values.length; ++i) {
@@ -58,7 +56,7 @@ public class MusicListActivity extends ListActivity {
 		playButton = (ImageButton) findViewById(R.id.play);
 		prevButton = (ImageButton) findViewById(R.id.prev);
 		nextButton = (ImageButton) findViewById(R.id.next);
-		text = (TextView)findViewById(R.id.selectedfile);
+		text = (TextView) findViewById(R.id.selectedfile);
 
 		playButton.setOnClickListener(onButtonClick);
 		nextButton.setOnClickListener(onButtonClick);
@@ -67,7 +65,7 @@ public class MusicListActivity extends ListActivity {
 		soundManager = SoundManager.getInstance();
 		soundManager.initSounds(this);
 		try {
-			soundManager.loadSounds("xx");
+			soundManager.loadSounds("cn");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -81,14 +79,23 @@ public class MusicListActivity extends ListActivity {
 	}
 
 	private void startPlay(String file) {
-		if(file!=null){
+		if (file != null) {
 			Log.i("Selected: ", file);
 			text.setText(file);
 		}
+		List<String> keys = new ArrayList<String>();
+		if (file.equalsIgnoreCase("中国")) {
+			keys.add("zhong1");
+			keys.add("guo2");
+		} else if (file.equalsIgnoreCase("今天")) {
+			keys.add("jin1");
+			keys.add("tian1");
+		}
 
-		String[] keys = { "jin1", "tian1" };
 		try {
-			soundManager.playMutilSounds(keys);
+			String[] files = new String[keys.size()];
+			files = keys.toArray(files);
+			soundManager.playMutilSounds(files);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

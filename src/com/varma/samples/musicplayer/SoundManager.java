@@ -19,6 +19,7 @@ import java.util.Vector;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class SoundManager {
+	public static String FILE_TYPE= "wav";
 
 	private SoundPool mSoundPool;
 
@@ -191,13 +192,10 @@ public class SoundManager {
 		Log.d("load locale", locale);
 		this.locale = locale;
 		AssetFileDescriptor afd;
-		Map<String, String> audioFiles = new HashMap<String, String>();
 
-		audioFiles.put("jin1", "jin1.wav");
-		audioFiles.put("tian1", "tian1.wav");
-		for (String key : audioFiles.keySet()) {
-			afd = mContext.getAssets().openFd(audioFiles.get(key));
-			addSound(key, afd);
+		for(String fileName: mContext.getAssets().list(FILE_TYPE)){
+			afd = mContext.getAssets().openFd(FILE_TYPE+"/"+fileName);
+			addSound(fileName.replaceAll("."+FILE_TYPE, ""), afd);
 		}
 
 	}
