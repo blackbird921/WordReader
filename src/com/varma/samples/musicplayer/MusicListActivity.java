@@ -80,11 +80,6 @@ public class MusicListActivity extends ListActivity {
 		startPlay(list.getAdapter().getItem(position).toString());
 	}
 
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-	}
-
 	private void startPlay(String file) {
 		if(file!=null){
 			Log.i("Selected: ", file);
