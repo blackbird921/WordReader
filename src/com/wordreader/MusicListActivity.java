@@ -1,32 +1,22 @@
-package com.varma.samples.musicplayer;
+package com.wordreader;
 
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
+import com.logic.wordreader.data.Word;
+import com.logic.wordreader.data.ZiWithPy;
 
 import android.app.ListActivity;
 import android.content.Context;
-import android.database.Cursor;
-import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.Handler;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.SeekBar;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 public class MusicListActivity extends ListActivity {
@@ -37,19 +27,25 @@ public class MusicListActivity extends ListActivity {
 	private TextView text;
 
 	SoundManager soundManager;
+	
+	List<Word> words;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		String[] values = new String[] { "中国", "今天" };
-
-		final ArrayList<String> list = new ArrayList<String>();
-		for (int i = 0; i < values.length; ++i) {
-			list.add(values[i]);
+		// String[] values = new String[] { "中国", "今天" };
+		// final ArrayList<String> list = new ArrayList<String>();
+		// for (int i = 0; i < values.length; ++i) {
+		// list.add(values[i]);
+		// }
+		if(words==null){
+			words = WordAssetParser.getAllWords(this, "hujiao_1_2_with_pinyin.txt");
 		}
-		final StableArrayAdapter adapter = new StableArrayAdapter(this, android.R.layout.simple_list_item_1, list);
+		System.out.println("======================");
+		System.out.println(words);
+		final StableArrayAdapter adapter = new StableArrayAdapter(this, android.R.layout.simple_list_item_1, words);
 
 		this.setListAdapter(adapter);
 
@@ -65,7 +61,11 @@ public class MusicListActivity extends ListActivity {
 		soundManager = SoundManager.getInstance();
 		soundManager.initSounds(this);
 		try {
-			soundManager.loadSounds("cn");
+//			soundManager.loadSounds("cn");
+			List<String> files = new ArrayList<String>();
+			files.add("zhong1");
+			files.add("guo2");
+			soundManager.loadSoundsByNames(files);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -75,9 +75,37 @@ public class MusicListActivity extends ListActivity {
 	protected void onListItemClick(ListView list, View view, int position, long id) {
 		super.onListItemClick(list, view, position, id);
 
-		startPlay(list.getAdapter().getItem(position).toString());
+		Word word = (Word)list.getAdapter().getItem(position);
+		List<String> keys = new ArrayList<String>();
+		for (ZiWithPy zi : word.getZiWithPys()) {
+			keys.add(zi.getPinyinNumber());
+		}
+		Log.i("here", "clicked:"+keys);
+		startPlay(list.getAdapter().getItem(position).toString(), keys);
+//		startPlay("中国");
 	}
 
+	private void startPlay(String chinese, List<String> keys) {
+//		keys= new ArrayList<String>();
+//		keys.add("zhong1");
+//		keys.add("guo2");
+
+		try {
+			String[] files = new String[keys.size()];
+			files = keys.toArray(files);
+			for(String s: files){
+				Log.i("here", "="+s);
+			}
+			soundManager.setOnLoadCompleteListener(new SoundManager.MyOnLoadCompleteListener(soundManager, files));
+			soundManager.loadSoundsByNames(keys);
+//			Thread.sleep(1000);
+//			soundManager.playMutilSounds(files);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	
 	private void startPlay(String file) {
 		if (file != null) {
 			Log.i("Selected: ", file);
@@ -102,21 +130,22 @@ public class MusicListActivity extends ListActivity {
 
 	}
 
-	private class StableArrayAdapter extends ArrayAdapter<String> {
+	private class StableArrayAdapter extends ArrayAdapter<Word> {
 
-		HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
+		HashMap<String, String> mIdMap = new HashMap<String, String>();
+		LayoutInflater layoutInflater;
 
-		public StableArrayAdapter(Context context, int textViewResourceId, List<String> objects) {
+		public StableArrayAdapter(Context context, int textViewResourceId, List<Word> objects) {
 			super(context, textViewResourceId, objects);
-			for (int i = 0; i < objects.size(); ++i) {
-				mIdMap.put(objects.get(i), i);
+			for (Word word : objects) {
+				String chinese = "";
+				String py = "";
+				for (ZiWithPy zi : word.getZiWithPys()) {
+					chinese += zi.getChinese();
+					py += zi.getPinyinNumber() + " ";
+				}
+				mIdMap.put(chinese, py);
 			}
-		}
-
-		@Override
-		public long getItemId(int position) {
-			String item = getItem(position);
-			return mIdMap.get(item);
 		}
 
 		@Override
