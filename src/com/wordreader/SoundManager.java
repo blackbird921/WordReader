@@ -21,9 +21,9 @@ import java.util.Vector;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class SoundManager {
-	public static String SOUND_FOLDER= "audio_man";
-	public static String SOUND_SUFFIX= "mp3";
-	public static int seperateTime = 500;
+	public static String SOUND_FOLDER = "audio_man";
+	public static String SOUND_SUFFIX = "mp3";
+	public static int seperateTime = 650;
 
 	private SoundPool mSoundPool;
 
@@ -37,14 +37,15 @@ public class SoundManager {
 
 	private Vector<Integer> mKillSoundQueue = new Vector<Integer>();
 
-	private long delay = 1000;
-
+	private long delay = 2000;
 
 	private float rate = 1.0f;
 
 	private String locale;
 
 	static private SoundManager _instance;
+
+	private int playTriggerSampleId = 0;
 
 	/**
 	 * Requests the instance of the Sound Manager and creates it if it does not
@@ -101,8 +102,10 @@ public class SoundManager {
 	 */
 	@TargetApi(3)
 	@SuppressLint("NewApi")
-	public void addSound(String key, AssetFileDescriptor afd) {
-		mSoundPoolMap.put(key, mSoundPool.load(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength(), 1));
+	public int addSound(String key, AssetFileDescriptor afd) {
+		int soundId = mSoundPool.load(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength(), 1);
+		mSoundPoolMap.put(key, soundId);
+		return soundId;
 	}
 
 	/**
@@ -159,30 +162,33 @@ public class SoundManager {
 	 *            the files key stored in the map
 	 * @throws InterruptedException
 	 */
-	public void playMutilSounds(String keys[]) throws InterruptedException {
-		int streamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-		streamVolume = streamVolume / mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-		System.out.println(mSoundPoolMap);
-		for (String key : keys) {
-			Log.d("playMutilSounds", key);
-			if (mSoundPoolMap.containsKey(key)) {
-//				int soundId = mSoundPool.play(mSoundPoolMap.get(key), streamVolume, streamVolume, 1, 0, rate);
-				int soundId = mSoundPool.play(mSoundPoolMap.get(key), 1, 1, 1, 0, rate);
-				// sleep for a while for SoundPool play
-				Thread.sleep(seperateTime);
-				mKillSoundQueue.add(soundId);
-			}
-
-		}
-
-		// schedule the current sound to stop after set milliseconds
-		mHandler.postDelayed(new Runnable() {
-			public void run() {
-				if (!mKillSoundQueue.isEmpty()) {
-					mSoundPool.stop(mKillSoundQueue.firstElement());
+	public void playMutilSounds(String keys[], int sampleId) throws InterruptedException {
+		if (sampleId == playTriggerSampleId) {
+			int streamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+			streamVolume = streamVolume / mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+			System.out.println(mSoundPoolMap);
+			for (String key : keys) {
+				Log.d("playMutilSounds", key);
+				if (mSoundPoolMap.containsKey(key)) {
+					// int soundId = mSoundPool.play(mSoundPoolMap.get(key),
+					// streamVolume, streamVolume, 1, 0, rate);
+					int soundId = mSoundPool.play(mSoundPoolMap.get(key), 1, 1, 1, 0, rate);
+					// sleep for a while for SoundPool play
+					Thread.sleep(seperateTime);
+					mKillSoundQueue.add(soundId);
 				}
+
 			}
-		}, delay);
+
+			// schedule the current sound to stop after set milliseconds
+//			mHandler.postDelayed(new Runnable() {
+//				public void run() {
+//					if (!mKillSoundQueue.isEmpty()) {
+//						mSoundPool.stop(mKillSoundQueue.firstElement());
+//					}
+//				}
+//			}, delay);
+		}
 
 	}
 
@@ -198,30 +204,30 @@ public class SoundManager {
 		this.locale = locale;
 		AssetFileDescriptor afd;
 
-		for(String fileName: mContext.getAssets().list(SOUND_FOLDER)){
-			afd = mContext.getAssets().openFd(SOUND_FOLDER+"/"+fileName);
-			addSound(fileName.replaceAll("."+SOUND_SUFFIX, ""), afd);
+		for (String fileName : mContext.getAssets().list(SOUND_FOLDER)) {
+			afd = mContext.getAssets().openFd(SOUND_FOLDER + "/" + fileName);
+			addSound(fileName.replaceAll("." + SOUND_SUFFIX, ""), afd);
 			Log.i("load audio", fileName);
 		}
 
 	}
-	
-	public void loadSoundsByNames(List<String> fileNames) throws SAXException, IOException, ParserConfigurationException {
+
+	public void loadSoundsByNames(List<String> fileNames) throws SAXException, IOException,
+			ParserConfigurationException {
 		AssetFileDescriptor afd;
 
 		unloadAllSoundsIn();
-		
-		for(String fileName: mContext.getAssets().list(SOUND_FOLDER)){
-			String key = fileName.replaceAll("."+SOUND_SUFFIX, "");
-			if(fileNames.contains(key)){
+
+		for (String fileName : mContext.getAssets().list(SOUND_FOLDER)) {
+			String key = fileName.replaceAll("." + SOUND_SUFFIX, "");
+			if (fileNames.contains(key)) {
 				afd = mContext.getAssets().openFd(SOUND_FOLDER + "/" + fileName);
-				addSound(key, afd);
+				playTriggerSampleId = addSound(key, afd);
 				Log.i("load audio", fileName);
 			}
 		}
 
 	}
-
 
 	/**
 	 * Stop a Sound
@@ -302,12 +308,11 @@ public class SoundManager {
 		this.locale = locale;
 	}
 
-	
-	public static class MyOnLoadCompleteListener implements OnLoadCompleteListener{
+	public static class MyOnLoadCompleteListener implements OnLoadCompleteListener {
 		SoundManager manager;
 		String[] keys;
-		
-		public MyOnLoadCompleteListener(SoundManager manager, String[] keys){
+
+		public MyOnLoadCompleteListener(SoundManager manager, String[] keys) {
 			this.manager = manager;
 			this.keys = keys;
 		}
@@ -315,16 +320,17 @@ public class SoundManager {
 		@Override
 		public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
 			try {
-				manager.playMutilSounds(keys);
+				manager.playMutilSounds(keys, sampleId);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+
 		}
 	}
-	
-	public void setOnLoadCompleteListener(OnLoadCompleteListener listener){
+
+	@SuppressLint("NewApi")
+	public void setOnLoadCompleteListener(OnLoadCompleteListener listener) {
 		this.mSoundPool.setOnLoadCompleteListener(listener);
 	}
 }

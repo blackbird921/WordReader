@@ -82,7 +82,6 @@ public class MusicListActivity extends ListActivity {
 		}
 		Log.i("here", "clicked:"+keys);
 		startPlay(list.getAdapter().getItem(position).toString(), keys);
-//		startPlay("中国");
 	}
 
 	private void startPlay(String chinese, List<String> keys) {
@@ -106,30 +105,6 @@ public class MusicListActivity extends ListActivity {
 
 	}
 	
-	private void startPlay(String file) {
-		if (file != null) {
-			Log.i("Selected: ", file);
-			text.setText(file);
-		}
-		List<String> keys = new ArrayList<String>();
-		if (file.equalsIgnoreCase("中国")) {
-			keys.add("zhong1");
-			keys.add("guo2");
-		} else if (file.equalsIgnoreCase("今天")) {
-			keys.add("jin1");
-			keys.add("tian1");
-		}
-
-		try {
-			String[] files = new String[keys.size()];
-			files = keys.toArray(files);
-			soundManager.playMutilSounds(files);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-	}
-
 	private class StableArrayAdapter extends ArrayAdapter<Word> {
 
 		HashMap<String, String> mIdMap = new HashMap<String, String>();
@@ -159,7 +134,7 @@ public class MusicListActivity extends ListActivity {
 
 		@Override
 		public void onClick(View v) {
-			startPlay(null);
+//			startPlay(null);
 		}
 	};
 
